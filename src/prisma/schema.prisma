@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @map("refreshToken") @db.Text
+  access_token      String? @map("accessToken") @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @map("idToken") @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model User {
+  userId             String            @id @default(cuid())
+  fullName           String?
+  email              String            @unique
+  password           String
+  dob                String?
+  contactNumber      String?
+  role               String
+  image              String?
+  verificationStatus Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+  account            Account[]
+  session            Session[]
+  projectAssignee    ProjectAssignee[]
+  activityLog        ActivityLog[]
+  comment            Comment[]
+  deletedAt          DateTime?
+}
+
+model Project {
+  id                     String  @id @default(cuid())
+  title                  String
+  procuringEntity        String
+  referenceNumber        String
+  areaOfDelivery         String
+  approvedBudgetContract Decimal
+  procurementMode        String
+  contractDuration       Decimal
+  priority               String
+
+  status      String?
+  progress    Decimal   @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  media                   Media[]
+  postQualificationResult PostQualificationResult?
+  projectAssignee         ProjectAssignee[]
+  activityLog             ActivityLog[]
+  metrics                 Metrics[]
+  purchaseOrder           PurchaseOrder?           
+  comment                 Comment[]
+  deletedAt               DateTime?
+}
+
+model PostQualificationResult {
+  id         String  @id @default(cuid())
+  result     String
+  dq_remarks String?
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String  @unique
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([projectId])
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  fileName  String
+  fileUrl   String
+  //This will determine the status{'POST QUAL', "NOTICE TO PROCEED, 'COOLECTION OF RECEIPT", "Aceeptance"} origin of files/medias 
+  origin    String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+
+  @@index([projectId])
+}
+
+model ProjectAssignee {
+  id        String    @id @default(cuid())
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User      @relation(fields: [userId], references: [userId])
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([projectId, userId])
+}
+
+model ActivityLog {
+  id String @id @default(cuid())
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+
+  user      User      @relation(fields: [userId], references: [userId])
+  userId    String
+  //Before state of the change
+  before    Json
+  //After state of the change
+  after     Json
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([projectId])
+}
+
+model Metrics {
+  id String @id @default(cuid())
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+
+  totalEarnings Decimal
+  month         String
+  year          String
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+}
+
+model Comment {
+  id String @id @default(cuid())
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+
+  user      User      @relation(fields: [userId], references: [userId])
+  userId    String
+  text      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([projectId])
+}
+
+model PurchaseOrder {
+  id                  String @id @default(cuid())
+  purchaseOrderNumber String
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String  @unique
+  status PurchaseOrderStatus @default(Ordered)
+
+  deliveredAt        DateTime?
+  purchaseOrderMedia PurchaseOrderMedia[]
+  createdAt          DateTime             @default(now())
+  deletedAt          DateTime?
+}
+
+enum PurchaseOrderStatus {
+  Ordered
+  Delivered
+}
+
+model PurchaseOrderMedia {
+  id String @id @default(cuid())
+
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  purchaseOrderId String?
+
+  fileName String
+  fileUrl  String
+}

@@ -1,0 +1,192 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table Account {
+  id String [pk]
+  userId String [not null]
+  type String [not null]
+  provider String [not null]
+  providerAccountId String [not null]
+  refresh_token String
+  access_token String
+  expires_at Int
+  token_type String
+  scope String
+  id_token String
+  session_state String
+  user User [not null]
+
+  indexes {
+    (provider, providerAccountId) [unique]
+  }
+}
+
+Table Session {
+  id String [pk]
+  sessionToken String [unique, not null]
+  userId String [not null]
+  expires DateTime [not null]
+  user User [not null]
+}
+
+Table User {
+  userId String [pk]
+  fullName String
+  email String [unique, not null]
+  password String [not null]
+  dob String
+  contactNumber String
+  role String [not null]
+  image String
+  verificationStatus Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  account Account [not null]
+  session Session [not null]
+  projectAssignee ProjectAssignee [not null]
+  activityLog ActivityLog [not null]
+  comment Comment [not null]
+  deletedAt DateTime
+}
+
+Table Project {
+  id String [pk]
+  title String [not null]
+  procuringEntity String [not null]
+  referenceNumber String [not null]
+  areaOfDelivery String [not null]
+  approvedBudgetContract Decimal [not null]
+  procurementMode String [not null]
+  contractDuration Decimal [not null]
+  priority String [not null]
+  status String
+  progress Decimal [not null, default: 0]
+  completedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  media Media [not null]
+  postQualificationResult PostQualificationResult
+  projectAssignee ProjectAssignee [not null]
+  activityLog ActivityLog [not null]
+  metrics Metrics [not null]
+  purchaseOrder PurchaseOrder
+  comment Comment [not null]
+  deletedAt DateTime
+}
+
+Table PostQualificationResult {
+  id String [pk]
+  result String [not null]
+  dq_remarks String
+  project Project [not null]
+  projectId String [unique, not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+}
+
+Table Media {
+  id String [pk]
+  fileName String [not null]
+  fileUrl String [not null]
+  origin String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+  project Project
+  projectId String
+}
+
+Table ProjectAssignee {
+  id String [pk]
+  project Project [not null]
+  projectId String [not null]
+  user User [not null]
+  userId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  deletedAt DateTime
+}
+
+Table ActivityLog {
+  id String [pk]
+  project Project
+  projectId String
+  user User [not null]
+  userId String [not null]
+  before Json [not null]
+  after Json [not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+}
+
+Table Metrics {
+  id String [pk]
+  project Project
+  projectId String
+  totalEarnings Decimal [not null]
+  month String [not null]
+  year String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+}
+
+Table Comment {
+  id String [pk]
+  project Project
+  projectId String
+  user User [not null]
+  userId String [not null]
+  text String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+}
+
+Table PurchaseOrder {
+  id String [pk]
+  purchaseOrderNumber String [not null]
+  project Project [not null]
+  projectId String [unique, not null]
+  status PurchaseOrderStatus [not null, default: 'Ordered']
+  deliveredAt DateTime
+  purchaseOrderMedia PurchaseOrderMedia [not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+}
+
+Table PurchaseOrderMedia {
+  id String [pk]
+  purchaseOrder PurchaseOrder
+  purchaseOrderId String
+  fileName String [not null]
+  fileUrl String [not null]
+}
+
+Enum PurchaseOrderStatus {
+  Ordered
+  Delivered
+}
+
+Ref: Account.userId > User.userId [delete: Cascade]
+
+Ref: Session.userId > User.userId [delete: Cascade]
+
+Ref: PostQualificationResult.projectId - Project.id [delete: Cascade]
+
+Ref: Media.projectId > Project.id [delete: Cascade]
+
+Ref: ProjectAssignee.projectId > Project.id [delete: Cascade]
+
+Ref: ProjectAssignee.userId > User.userId
+
+Ref: ActivityLog.projectId > Project.id [delete: Cascade]
+
+Ref: ActivityLog.userId > User.userId
+
+Ref: Metrics.projectId > Project.id [delete: Cascade]
+
+Ref: Comment.projectId > Project.id [delete: Cascade]
+
+Ref: Comment.userId > User.userId
+
+Ref: PurchaseOrder.projectId - Project.id [delete: Cascade]
+
+Ref: PurchaseOrderMedia.purchaseOrderId > PurchaseOrder.id [delete: Cascade]
